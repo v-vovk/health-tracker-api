@@ -3,7 +3,7 @@ DB_URL := postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?
 MIGRATE_CMD := migrate -database "$(DB_URL)" -path migrations
 
 # Commands
-.PHONY: migrate-up migrate-down migrate-force migrate-create migrate-version migrate-status
+.PHONY: migrate-up migrate-down migrate-force migrate-create migrate-version migrate-status run
 
 migrate-up:
 	$(MIGRATE_CMD) up
@@ -20,3 +20,6 @@ migrate-create:
 
 migrate-version:
 	$(MIGRATE_CMD) version
+
+run:
+	go run cmd/main.go
