@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/v-vovk/health-tracker-api/internal/food"
 	"github.com/v-vovk/health-tracker-api/internal/middleware"
@@ -16,6 +17,9 @@ func main() {
 	cfg := config.LoadConfig()
 
 	database := db.Connect(cfg)
+	if database == nil {
+		log.Fatal("Failed to connect to the database")
+	}
 	database.AutoMigrate(&food.Food{})
 
 	r := chi.NewRouter()
@@ -23,17 +27,12 @@ func main() {
 	r.Use(middleware.JSONMiddleware)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Health Tracker API is running!"))
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"status": "Health Tracker API is running!"})
 	})
 
 	foodHandler := &food.Handler{DB: database}
-	r.Route("/foods", func(r chi.Router) {
-		r.Get("/", foodHandler.GetFoods)
-		r.Post("/", foodHandler.CreateFood)
-		r.Get("/{id}", foodHandler.GetFoodByID)
-		r.Put("/{id}", foodHandler.UpdateFood)
-		r.Delete("/{id}", foodHandler.DeleteFood)
-	})
+	r.Mount("/foods", foodHandler.Routes())
 
 	port := fmt.Sprintf(":%s", cfg.AppPort)
 	log.Printf("Starting server on %s", port)

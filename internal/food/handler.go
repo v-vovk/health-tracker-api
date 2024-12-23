@@ -2,10 +2,12 @@ package food
 
 import (
 	"encoding/json"
-	"github.com/go-chi/chi/v5"
-	"gorm.io/gorm"
+	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/go-chi/chi/v5"
+	"gorm.io/gorm"
 )
 
 type Food struct {
@@ -19,13 +21,13 @@ type Handler struct {
 	DB *gorm.DB
 }
 
-func (h *Handler) GetFoods(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 	var foods []Food
 	h.DB.Find(&foods)
 	json.NewEncoder(w).Encode(foods)
 }
 
-func (h *Handler) CreateFood(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	var food Food
 	if err := json.NewDecoder(r.Body).Decode(&food); err != nil {
 		http.Error(w, "Invalid input", http.StatusBadRequest)
@@ -36,7 +38,7 @@ func (h *Handler) CreateFood(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(food)
 }
 
-func (h *Handler) GetFoodByID(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	var food Food
 	if err := h.DB.First(&food, "id = ?", id).Error; err != nil {
@@ -46,7 +48,7 @@ func (h *Handler) GetFoodByID(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(food)
 }
 
-func (h *Handler) UpdateFood(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	var food Food
 	if err := h.DB.First(&food, "id = ?", id).Error; err != nil {
@@ -65,10 +67,11 @@ func (h *Handler) UpdateFood(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(food)
 }
 
-func (h *Handler) DeleteFood(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if err := h.DB.Delete(&Food{}, "id = ?", id).Error; err != nil {
-		http.Error(w, "Food not found", http.StatusNotFound)
+		http.Error(w, fmt.Sprintf("Error deleting food: %v", err), http.StatusInternalServerError)
+
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
