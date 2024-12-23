@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS foods_groups;
+DROP TABLE IF EXISTS groups;
+DROP TABLE IF EXISTS foods;
