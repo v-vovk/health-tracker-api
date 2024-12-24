@@ -3,19 +3,27 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/go-playground/validator/v10"
-	"github.com/v-vovk/health-tracker-api/internal/food"
-	"github.com/v-vovk/health-tracker-api/internal/middleware"
-	"log"
-	"net/http"
-
 	"github.com/go-chi/chi/v5"
+	"github.com/go-playground/validator/v10"
 	"github.com/v-vovk/health-tracker-api/internal/config"
 	"github.com/v-vovk/health-tracker-api/internal/db"
+	"github.com/v-vovk/health-tracker-api/internal/food"
+	"github.com/v-vovk/health-tracker-api/internal/logger"
+	"github.com/v-vovk/health-tracker-api/internal/middleware"
+	"go.uber.org/zap"
+	"log"
+	"net/http"
 )
 
 func main() {
 	cfg := config.LoadConfig()
+
+	logger.InitLogger(cfg.Env)
+	defer logger.Sync()
+
+	logger.Log.Info("Starting Health Tracker API")
+
+	logger.Log.Info("Environment Variables: " + cfg.Env)
 
 	database := db.Connect(cfg)
 	if database == nil {
@@ -36,7 +44,7 @@ func main() {
 	r.Mount("/foods", foodHandler.Routes())
 
 	port := fmt.Sprintf(":%s", cfg.AppPort)
-	log.Printf("Starting server on %s", port)
+	logger.Log.Info("Server is starting", zap.String("port", port))
 
-	http.ListenAndServe(port, r)
+	log.Fatal(http.ListenAndServe(port, r))
 }

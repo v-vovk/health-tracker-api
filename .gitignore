@@ -28,3 +28,4 @@ go.work.sum
 /.idea/modules.xml
 /.idea/vcs.xml
 /.idea/dataSources.xml
+/logs/

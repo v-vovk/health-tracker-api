@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"github.com/go-playground/validator/v10"
 	"github.com/v-vovk/health-tracker-api/internal/helpers"
+	"github.com/v-vovk/health-tracker-api/internal/logger"
+	"go.uber.org/zap"
 	"log"
 	"net/http"
 	"strconv"
@@ -84,25 +86,25 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	var food Food
 	if err := json.NewDecoder(r.Body).Decode(&food); err != nil {
 		helpers.JSONError(w, "Invalid JSON input", http.StatusBadRequest)
-		log.Printf("Invalid JSON input: %v", err)
+		logger.Log.Warn("Invalid JSON input", zap.Error(err))
 		return
 	}
 
 	// Validate input
 	if err := h.Validator.Struct(food); err != nil {
 		helpers.ValidationErrors(w, err, http.StatusBadRequest)
-		log.Printf("Validation failed for food: %v", err)
+		logger.Log.Warn("Validation failed", zap.Error(err))
 		return
 	}
 
 	// Save to database
 	if err := h.DB.Create(&food).Error; err != nil {
 		helpers.JSONError(w, "Error creating food", http.StatusInternalServerError)
-		log.Printf("Error creating food: %v", err)
+		logger.Log.Error("Error creating food", zap.Error(err))
 		return
 	}
 
-	log.Printf("Created new food: %+v", food)
+	logger.Log.Info("Created new food", zap.String("id", food.ID), zap.String("name", food.Name))
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(food)
 }
