@@ -25,3 +25,15 @@ migrate-version:
 
 run:
 	go run cmd/main.go
+
+test:
+	go test ./... -v
+
+build:
+	go build -o bin/health-tracker ./cmd/main.go
+
+lint:
+	golangci-lint run
+
+clean:
+	@rm -rf bin/ logs/app.log
