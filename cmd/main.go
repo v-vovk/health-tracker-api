@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/go-playground/validator/v10"
 	"github.com/v-vovk/health-tracker-api/internal/food"
 	"github.com/v-vovk/health-tracker-api/internal/middleware"
 	"log"
@@ -31,7 +32,7 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]string{"status": "Health Tracker API is running!"})
 	})
 
-	foodHandler := &food.Handler{DB: database}
+	foodHandler := &food.Handler{DB: database, Validator: validator.New()}
 	r.Mount("/foods", foodHandler.Routes())
 
 	port := fmt.Sprintf(":%s", cfg.AppPort)

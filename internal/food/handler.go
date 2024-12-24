@@ -2,6 +2,8 @@ package food
 
 import (
 	"encoding/json"
+	"github.com/go-playground/validator/v10"
+	"github.com/v-vovk/health-tracker-api/internal/helpers"
 	"log"
 	"net/http"
 	"strconv"
@@ -13,13 +15,14 @@ import (
 
 type Food struct {
 	ID        string    `json:"id" gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	Name      string    `json:"name" gorm:"not null"`
+	Name      string    `json:"name" gorm:"not null" validate:"required,min=2,max=50"`
 	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
 	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
 }
 
 type Handler struct {
-	DB *gorm.DB
+	DB        *gorm.DB
+	Validator *validator.Validate
 }
 
 func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
@@ -80,15 +83,25 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	var food Food
 	if err := json.NewDecoder(r.Body).Decode(&food); err != nil {
-		http.Error(w, "Invalid input", http.StatusBadRequest)
-		log.Printf("Invalid input for creating food: %v", err)
+		helpers.JSONError(w, "Invalid JSON input", http.StatusBadRequest)
+		log.Printf("Invalid JSON input: %v", err)
 		return
 	}
+
+	// Validate input
+	if err := h.Validator.Struct(food); err != nil {
+		helpers.ValidationErrors(w, err, http.StatusBadRequest)
+		log.Printf("Validation failed for food: %v", err)
+		return
+	}
+
+	// Save to database
 	if err := h.DB.Create(&food).Error; err != nil {
-		http.Error(w, "Error creating food", http.StatusInternalServerError)
+		helpers.JSONError(w, "Error creating food", http.StatusInternalServerError)
 		log.Printf("Error creating food: %v", err)
 		return
 	}
+
 	log.Printf("Created new food: %+v", food)
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(food)
@@ -120,7 +133,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if id == "" {
-		http.Error(w, "Missing food ID", http.StatusBadRequest)
+		helpers.JSONError(w, "Missing food ID", http.StatusBadRequest)
 		log.Println("Missing food ID in request")
 		return
 	}
@@ -128,28 +141,37 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	var food Food
 	if err := h.DB.First(&food, "id = ?", id).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			http.Error(w, "Food not found", http.StatusNotFound)
+			helpers.JSONError(w, "Food not found", http.StatusNotFound)
 			log.Printf("Food not found with ID: %s", id)
 			return
 		}
-		http.Error(w, "Error retrieving food", http.StatusInternalServerError)
+		helpers.JSONError(w, "Error retrieving food", http.StatusInternalServerError)
 		log.Printf("Error retrieving food with ID %s: %v", id, err)
 		return
 	}
 
 	var updatedData Food
 	if err := json.NewDecoder(r.Body).Decode(&updatedData); err != nil {
-		http.Error(w, "Invalid input", http.StatusBadRequest)
-		log.Printf("Invalid input for updating food: %v", err)
+		helpers.JSONError(w, "Invalid JSON input", http.StatusBadRequest)
+		log.Printf("Invalid JSON input for updating food: %v", err)
 		return
 	}
 
+	// Validate input
+	if err := h.Validator.Struct(updatedData); err != nil {
+		helpers.ValidationErrors(w, err, http.StatusBadRequest)
+		log.Printf("Validation failed for food update: %v", err)
+		return
+	}
+
+	// Update record
 	food.Name = updatedData.Name
 	if err := h.DB.Save(&food).Error; err != nil {
-		http.Error(w, "Error updating food", http.StatusInternalServerError)
+		helpers.JSONError(w, "Error updating food", http.StatusInternalServerError)
 		log.Printf("Error updating food with ID %s: %v", id, err)
 		return
 	}
+
 	log.Printf("Updated food: %+v", food)
 	json.NewEncoder(w).Encode(food)
 }
