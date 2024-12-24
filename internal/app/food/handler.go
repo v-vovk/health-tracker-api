@@ -66,7 +66,9 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 
 	h.Logger.Info("Retrieved foods", zap.Int("limit", limit), zap.Int("offset", offset), zap.Int("returned", len(foods)))
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		h.Logger.Error("Failed to encode response", zap.Error(err))
+	}
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
@@ -91,7 +93,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	h.Logger.Info("Created new food", zap.String("id", food.ID), zap.String("name", food.Name))
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(food)
+	if err := json.NewEncoder(w).Encode(food); err != nil {
+		h.Logger.Error("Failed to encode response", zap.Error(err))
+	}
 }
 
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
@@ -117,6 +121,9 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	h.Logger.Info("Retrieved food", zap.String("id", food.ID), zap.String("name", food.Name))
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(food)
+	if err := json.NewEncoder(w).Encode(food); err != nil {
+		h.Logger.Error("Failed to encode response", zap.Error(err))
+	}
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
@@ -153,7 +160,9 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.Logger.Info("Updated food", zap.String("id", updatedData.ID), zap.String("name", updatedData.Name))
-	json.NewEncoder(w).Encode(updatedData)
+	if err := json.NewEncoder(w).Encode(updatedData); err != nil {
+		h.Logger.Error("Failed to encode response", zap.Error(err))
+	}
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {

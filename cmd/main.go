@@ -28,7 +28,9 @@ func main() {
 	if database == nil {
 		log.Fatal("Failed to connect to the database")
 	}
-	database.AutoMigrate(&food.Food{})
+	if err := database.AutoMigrate(&food.Food{}); err != nil {
+		log.Fatalf("Failed to run migrations: %v", err)
+	}
 
 	r := chi.NewRouter()
 
