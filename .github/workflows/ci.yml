@@ -1,0 +1,59 @@
+name: CI for Go Project
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Go
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.23
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: |
+          go mod tidy
+          go mod download
+
+      # Step 4: Run linters (golangci-lint)
+      - name: Run linters
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+
+      # Step 5: Run unit tests
+      - name: Run tests
+        run: |
+          go test ./... -v -cover
+
+      # Step 6: Check for proper formatting
+      - name: Check formatting
+        run: |
+          gofmt -s -l .
+
+      - name: Cache Go modules
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
