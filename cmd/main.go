@@ -40,7 +40,8 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]string{"status": "Health Tracker API is running!"})
 	})
 
-	foodHandler := &food.Handler{DB: database, Validator: validator.New()}
+	foodLog := logger.Log.Named("FoodHandler")
+	foodHandler := &food.Handler{DB: database, Validator: validator.New(), Logger: foodLog}
 	r.Mount("/foods", foodHandler.Routes())
 
 	port := fmt.Sprintf(":%s", cfg.AppPort)
