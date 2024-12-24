@@ -120,6 +120,10 @@ DB_PORT=5432
    ```bash
    make dev
    ```
+5. Run linting:
+   ```bash
+   make lint
+   ```
 
 ### Without Docker
 
