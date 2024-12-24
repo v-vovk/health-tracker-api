@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-playground/validator/v10"
 	"github.com/v-vovk/health-tracker-api/internal/app/food"
 	"github.com/v-vovk/health-tracker-api/internal/infra/config"
 	"github.com/v-vovk/health-tracker-api/internal/infra/db"
@@ -42,8 +41,7 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]string{"status": "Health Tracker API is running!"})
 	})
 
-	foodLog := logger.Log.Named("FoodHandler")
-	foodHandler := &food.Handler{DB: database, Validator: validator.New(), Logger: foodLog}
+	foodHandler := food.NewHandlerFactory(database, logger.Log)
 	r.Mount("/foods", foodHandler.Routes())
 
 	port := fmt.Sprintf(":%s", cfg.AppPort)

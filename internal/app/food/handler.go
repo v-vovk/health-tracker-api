@@ -6,72 +6,65 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/v-vovk/health-tracker-api/internal/infra/errors"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 	"net/http"
 	"strconv"
-	"time"
-
-	"gorm.io/gorm"
 )
 
-type Food struct {
-	ID        string    `json:"id" gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	Name      string    `json:"name" gorm:"not null" validate:"required,min=1,max=50"`
-	CreatedAt time.Time `json:"created_at" gorm:"autoCreateTime"`
-	UpdatedAt time.Time `json:"updated_at" gorm:"autoUpdateTime"`
-}
-
 type Handler struct {
-	DB        *gorm.DB
+	Service   *Service
 	Validator *validator.Validate
 	Logger    *zap.Logger
 }
 
+func NewHandler(service *Service, validator *validator.Validate, logger *zap.Logger) *Handler {
+	return &Handler{
+		Service:   service,
+		Validator: validator,
+		Logger:    logger,
+	}
+}
+
 func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
-	limit := r.URL.Query().Get("limit")
-	offset := r.URL.Query().Get("offset")
+	limit := 10
+	offset := 0
 
-	limitInt := 10
-	offsetInt := 0
-
-	if limit != "" {
-		if l, err := strconv.Atoi(limit); err == nil && l > 0 {
-			limitInt = l
+	if l := r.URL.Query().Get("limit"); l != "" {
+		if parsed, err := strconv.Atoi(l); err == nil && parsed > 0 {
+			limit = parsed
 		} else {
-			errors.JSONError(w, "Invalid 'limit' parameter", http.StatusBadRequest)
-			h.Logger.Warn("Invalid 'limit' parameter", zap.String("limit", limit))
+			errors.WriteHTTPError(w, http.StatusBadRequest, "Invalid 'limit' parameter")
+			h.Logger.Warn("Invalid 'limit' parameter", zap.String("limit", l))
 			return
 		}
 	}
 
-	if offset != "" {
-		if o, err := strconv.Atoi(offset); err == nil && o >= 0 {
-			offsetInt = o
+	if o := r.URL.Query().Get("offset"); o != "" {
+		if parsed, err := strconv.Atoi(o); err == nil && parsed >= 0 {
+			offset = parsed
 		} else {
-			errors.JSONError(w, "Invalid 'offset' parameter", http.StatusBadRequest)
-			h.Logger.Warn("Invalid 'offset' parameter", zap.String("offset", offset))
+			errors.WriteHTTPError(w, http.StatusBadRequest, "Invalid 'offset' parameter")
+			h.Logger.Warn("Invalid 'offset' parameter", zap.String("offset", o))
 			return
 		}
 	}
 
-	var foods []Food
-	if err := h.DB.Limit(limitInt).Offset(offsetInt).Find(&foods).Error; err != nil {
-		errors.JSONError(w, "Error retrieving foods", http.StatusInternalServerError)
+	foods, total, err := h.Service.GetAllFoods(limit, offset)
+	if err != nil {
+		errors.WriteHTTPError(w, http.StatusInternalServerError, "Error retrieving foods")
 		h.Logger.Error("Error retrieving foods", zap.Error(err))
 		return
 	}
 
-	var total int64
-	h.DB.Model(&Food{}).Count(&total)
-
 	response := map[string]interface{}{
 		"data":     foods,
 		"total":    total,
-		"limit":    limitInt,
-		"offset":   offsetInt,
+		"limit":    limit,
+		"offset":   offset,
 		"returned": len(foods),
 	}
 
-	h.Logger.Info("Retrieved foods", zap.Int("limit", limitInt), zap.Int("offset", offsetInt), zap.Int("returned", len(foods)))
+	h.Logger.Info("Retrieved foods", zap.Int("limit", limit), zap.Int("offset", offset), zap.Int("returned", len(foods)))
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
@@ -79,19 +72,19 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	var food Food
 	if err := json.NewDecoder(r.Body).Decode(&food); err != nil {
-		errors.JSONError(w, "Invalid JSON input", http.StatusBadRequest)
+		errors.WriteHTTPError(w, http.StatusBadRequest, "Invalid JSON input")
 		h.Logger.Warn("Invalid JSON input", zap.Error(err))
 		return
 	}
 
 	if err := h.Validator.Struct(food); err != nil {
-		errors.ValidationErrors(w, err, http.StatusBadRequest)
+		errors.WriteHTTPError(w, http.StatusBadRequest, "Validation failed")
 		h.Logger.Warn("Validation failed", zap.Error(err))
 		return
 	}
 
-	if err := h.DB.Create(&food).Error; err != nil {
-		errors.JSONError(w, "Error creating food", http.StatusInternalServerError)
+	if err := h.Service.CreateFood(&food); err != nil {
+		errors.WriteHTTPError(w, http.StatusInternalServerError, "Error creating food")
 		h.Logger.Error("Error creating food", zap.Error(err))
 		return
 	}
@@ -104,86 +97,80 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if id == "" {
-		errors.JSONError(w, "Missing food ID", http.StatusBadRequest)
+		errors.WriteHTTPError(w, http.StatusBadRequest, "Missing food ID")
 		h.Logger.Warn("Missing food ID in request")
 		return
 	}
 
-	var food Food
-	if err := h.DB.First(&food, "id = ?", id).Error; err != nil {
+	food, err := h.Service.GetFoodByID(id)
+	if err != nil {
 		if err == gorm.ErrRecordNotFound {
-			errors.JSONError(w, "Food not found", http.StatusNotFound)
+			errors.WriteHTTPError(w, http.StatusNotFound, "Food not found")
 			h.Logger.Warn("Food not found", zap.String("id", id))
 			return
 		}
-		errors.JSONError(w, "Error retrieving food", http.StatusInternalServerError)
+		errors.WriteHTTPError(w, http.StatusInternalServerError, "Error retrieving food")
 		h.Logger.Error("Error retrieving food", zap.String("id", id), zap.Error(err))
 		return
 	}
 
 	h.Logger.Info("Retrieved food", zap.String("id", food.ID), zap.String("name", food.Name))
+	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(food)
 }
 
 func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if id == "" {
-		errors.JSONError(w, "Missing food ID", http.StatusBadRequest)
+		errors.WriteHTTPError(w, http.StatusBadRequest, "Missing food ID")
 		h.Logger.Warn("Missing food ID in request")
-		return
-	}
-
-	var food Food
-	if err := h.DB.First(&food, "id = ?", id).Error; err != nil {
-		if err == gorm.ErrRecordNotFound {
-			errors.JSONError(w, "Food not found", http.StatusNotFound)
-			h.Logger.Warn("Food not found", zap.String("id", id))
-			return
-		}
-		errors.JSONError(w, "Error retrieving food", http.StatusInternalServerError)
-		h.Logger.Error("Error retrieving food", zap.String("id", id), zap.Error(err))
 		return
 	}
 
 	var updatedData Food
 	if err := json.NewDecoder(r.Body).Decode(&updatedData); err != nil {
-		errors.JSONError(w, "Invalid JSON input", http.StatusBadRequest)
+		errors.WriteHTTPError(w, http.StatusBadRequest, "Invalid JSON input")
 		h.Logger.Warn("Invalid JSON input for update", zap.Error(err))
 		return
 	}
 
 	if err := h.Validator.Struct(updatedData); err != nil {
-		errors.ValidationErrors(w, err, http.StatusBadRequest)
+		errors.WriteHTTPError(w, http.StatusBadRequest, "Validation failed")
 		h.Logger.Warn("Validation failed for update", zap.Error(err))
 		return
 	}
 
-	food.Name = updatedData.Name
-	if err := h.DB.Save(&food).Error; err != nil {
-		errors.JSONError(w, "Error updating food", http.StatusInternalServerError)
+	updatedData.ID = id
+	if err := h.Service.UpdateFood(&updatedData); err != nil {
+		if err == gorm.ErrRecordNotFound {
+			errors.WriteHTTPError(w, http.StatusNotFound, "Food not found")
+			h.Logger.Warn("Food not found", zap.String("id", id))
+			return
+		}
+		errors.WriteHTTPError(w, http.StatusInternalServerError, "Error updating food")
 		h.Logger.Error("Error updating food", zap.String("id", id), zap.Error(err))
 		return
 	}
 
-	h.Logger.Info("Updated food", zap.String("id", food.ID), zap.String("name", food.Name))
-	json.NewEncoder(w).Encode(food)
+	h.Logger.Info("Updated food", zap.String("id", updatedData.ID), zap.String("name", updatedData.Name))
+	json.NewEncoder(w).Encode(updatedData)
 }
 
 func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if id == "" {
-		errors.JSONError(w, "Missing food ID", http.StatusBadRequest)
+		errors.WriteHTTPError(w, http.StatusBadRequest, "Missing food ID")
 		h.Logger.Warn("Missing food ID in request")
 		return
 	}
 
-	if err := h.DB.Delete(&Food{}, "id = ?", id).Error; err != nil {
+	if err := h.Service.DeleteFood(id); err != nil {
 		if err == gorm.ErrRecordNotFound {
-			errors.JSONError(w, "Food not found", http.StatusNotFound)
+			errors.WriteHTTPError(w, http.StatusNotFound, "Food not found")
 			h.Logger.Warn("Food not found", zap.String("id", id))
 			return
 		}
-		errors.JSONError(w, "Error deleting food", http.StatusInternalServerError)
+		errors.WriteHTTPError(w, http.StatusInternalServerError, "Error deleting food")
 		h.Logger.Error("Error deleting food", zap.String("id", id), zap.Error(err))
 		return
 	}
