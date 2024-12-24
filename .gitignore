@@ -23,10 +23,6 @@ go.work.sum
 
 # env file
 .env
-/.idea/.gitignore
-/.idea/health-tracker-api.iml
-/.idea/modules.xml
-/.idea/vcs.xml
-/.idea/dataSources.xml
+/.idea/
 /logs/
 /tmp/
