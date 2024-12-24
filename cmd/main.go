@@ -34,6 +34,8 @@ func main() {
 	r := chi.NewRouter()
 
 	r.Use(middleware.JSONMiddleware)
+	r.Use(middleware.RequestLogger)
+	r.Use(middleware.RecoveryMiddleware)
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
