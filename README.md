@@ -1,23 +1,19 @@
 
 # Health Tracker API
 
-The **Health Tracker API** is a backend service for managing food items, meals, and food groups. It provides RESTful endpoints to create, retrieve, update, and delete records while adhering to a clean and maintainable architecture.
+## Overview
+This project is a Health Tracker API that allows users to manage food entities and meals while maintaining detailed logs and error handling. It uses Go with a clean and scalable structure.
 
 ## Features
-
-- **CRUD Operations**: Manage food items, meals, and food groups.
-- **Pagination**: Query data with `limit` and `offset` parameters.
-- **Error Handling**: Consistent JSON-based error responses.
-- **Validation**: Input validation using `go-playground/validator`.
-- **Structured Logging**: Logging with `zap` for debugging and monitoring.
-- **Middleware**: JSON formatting, request logging, and error recovery.
-- **AIR**: live hot reload on changes for dev-mode.
-
----
+- Food entity CRUD operations.
+- Logging using `zap`.
+- CI pipeline for linting and testing with `golangci-lint`.
+- Robust error handling.
+- Follows clean code principles with separated concerns (repository, service, handler).
+- Docker setup for Postgres and Redis.
 
 ## Project Structure
-
-```plaintext
+```
 .
 ├── Makefile
 ├── cmd
@@ -186,6 +182,63 @@ DB_PORT=5432
 To be implemented.
 
 ---
+
+## Release Strategy
+
+### Steps for Releasing a New Version
+
+1. **Prepare the `develop` Branch**
+    - Ensure `develop` is up to date:
+      ```bash
+      git checkout develop
+      git pull origin develop
+      ```
+    - Run final checks:
+      ```bash
+      make lint
+      make test
+      ```
+    - Update `README.md` and `CHANGELOG.md` if needed.
+
+2. **Create a Pull Request**
+    - Push the latest changes:
+      ```bash
+      git push origin develop
+      ```
+    - Open a PR from `develop` to `main`:
+        - **Title**: `Release vX.Y.Z`
+        - **Description**: Include features, fixes, and testing status.
+    - Request reviews and wait for approval.
+
+3. **Merge the PR**
+    - Merge the PR into `main` using GitHub.
+    - Pull the latest changes locally:
+      ```bash
+      git checkout main
+      git pull origin main
+      ```
+
+4. **Tag the Release**
+    - Create a tag for the release:
+      ```bash
+      git tag -a vX.Y.Z -m "Release version X.Y.Z"
+      git push origin vX.Y.Z
+      ```
+    - Update the GitHub Releases section with details of the release.
+
+5. **Deployment**
+    - If ready, deploy the release to production.
+    - Automate this step using GitHub Actions or a similar CI/CD tool.
+
+6. **Next Development Cycle**
+    - Switch back to `develop`:
+      ```bash
+      git checkout develop
+      ```
+    - Create a new branch for the next feature or fix:
+      ```bash
+      git checkout -b feature/next-feature
+      ```
 
 ## License
 
