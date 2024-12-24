@@ -5,7 +5,7 @@ DB_URL := postgres://$(DB_USER):$(DB_PASSWORD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)?
 MIGRATE_CMD := migrate -database "$(DB_URL)" -path migrations
 
 # Commands
-.PHONY: migrate-up migrate-down migrate-force migrate-create migrate-version migrate-status run
+.PHONY: migrate-up migrate-down migrate-force migrate-create migrate-version migrate-status run test build lint clean dev
 
 migrate-up:
 	$(MIGRATE_CMD) up
@@ -37,3 +37,6 @@ lint:
 
 clean:
 	@rm -rf bin/ logs/app.log
+
+dev:
+	air
