@@ -2,6 +2,7 @@ package errors
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 )
 
@@ -15,8 +16,14 @@ type HTTPError struct {
 func WriteHTTPError(w http.ResponseWriter, statusCode int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(map[string]interface{}{
+
+	response := map[string]interface{}{
 		"status_code": statusCode,
 		"message":     message,
-	})
+	}
+
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		// Log the error if encoding fails
+		log.Printf("Failed to write HTTP error response: %v", err)
+	}
 }

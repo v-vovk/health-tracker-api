@@ -33,7 +33,7 @@ build:
 	go build -o bin/health-tracker ./cmd/main.go
 
 lint:
-	golangci-lint run
+	@golangci-lint run --config .golangci.yml
 
 clean:
 	@rm -rf bin/ logs/app.log

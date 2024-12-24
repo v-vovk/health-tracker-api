@@ -120,7 +120,6 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 
 	h.Logger.Info("Retrieved food", zap.String("id", food.ID), zap.String("name", food.Name))
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(food)
 	if err := json.NewEncoder(w).Encode(food); err != nil {
 		h.Logger.Error("Failed to encode response", zap.Error(err))
 	}

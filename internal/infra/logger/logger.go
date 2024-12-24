@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"fmt"
 	"go.uber.org/zap"
 	"os"
 )
@@ -46,6 +47,9 @@ func InitLogger(env string) {
 // Sync flushes any buffered log entries
 func Sync() {
 	if Log != nil {
-		_ = Log.Sync()
+		if err := Log.Sync(); err != nil {
+			// Log error if syncing fails
+			fmt.Printf("Failed to sync logger: %v\n", err)
+		}
 	}
 }

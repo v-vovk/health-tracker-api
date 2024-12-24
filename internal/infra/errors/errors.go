@@ -16,14 +16,21 @@ func JSONError(w http.ResponseWriter, message string, statusCode int) {
 		"error": message,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		fmt.Printf("Failed to write JSON response: %v\n", err)
+	}
 }
 
 func ValidationErrors(w http.ResponseWriter, errs error, statusCode int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 
-	validationErrors := errs.(validator.ValidationErrors)
+	validationErrors, ok := errs.(validator.ValidationErrors)
+	if !ok {
+		fmt.Printf("Error type assertion failed for validation errors\n")
+		return
+	}
+
 	errors := make([]string, len(validationErrors))
 
 	for i, err := range validationErrors {
@@ -34,5 +41,7 @@ func ValidationErrors(w http.ResponseWriter, errs error, statusCode int) {
 		"errors": errors,
 	}
 
-	json.NewEncoder(w).Encode(response)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		fmt.Printf("Failed to write JSON response: %v\n", err)
+	}
 }

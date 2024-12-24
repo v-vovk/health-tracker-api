@@ -40,7 +40,9 @@ func main() {
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(map[string]string{"status": "Health Tracker API is running!"})
+		if err := json.NewEncoder(w).Encode(map[string]string{"status": "Health Tracker API is running!"}); err != nil {
+			logger.Log.Error("Failed to encode health check response", zap.Error(err))
+		}
 	})
 
 	foodHandler := food.NewHandlerFactory(database, logger.Log)
