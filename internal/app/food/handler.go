@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
-	"github.com/v-vovk/health-tracker-api/pkg/errors"
+	"github.com/v-vovk/health-tracker-api/internal/infra/errors"
 	"go.uber.org/zap"
 	"net/http"
 	"strconv"

@@ -2,7 +2,7 @@ package db
 
 import (
 	"fmt"
-	"github.com/v-vovk/health-tracker-api/pkg/config"
+	"github.com/v-vovk/health-tracker-api/internal/infra/config"
 	"log"
 
 	"gorm.io/driver/postgres"
