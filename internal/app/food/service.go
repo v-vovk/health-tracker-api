@@ -1,10 +1,10 @@
 package food
 
 type Service struct {
-	Repo *Repository
+	Repo Repository
 }
 
-func NewService(repo *Repository) *Service {
+func NewService(repo Repository) *Service {
 	return &Service{Repo: repo}
 }
 
