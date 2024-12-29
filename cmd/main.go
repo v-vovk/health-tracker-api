@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/go-chi/chi/v5"
 	"github.com/v-vovk/health-tracker-api/internal/app/food"
+	"github.com/v-vovk/health-tracker-api/internal/app/group"
 	"github.com/v-vovk/health-tracker-api/internal/infra/config"
 	"github.com/v-vovk/health-tracker-api/internal/infra/db"
 	"github.com/v-vovk/health-tracker-api/internal/infra/logger"
@@ -47,6 +48,9 @@ func main() {
 
 	foodHandler := food.NewHandlerFactory(database, logger.Log)
 	r.Mount("/foods", foodHandler.Routes())
+
+	groupHandler := group.NewHandlerFactory(database, logger.Log)
+	r.Mount("/groups", groupHandler.Routes())
 
 	port := fmt.Sprintf(":%s", cfg.AppPort)
 	logger.Log.Info("Server is starting", zap.String("port", port))
