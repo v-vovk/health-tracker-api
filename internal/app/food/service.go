@@ -8,22 +8,29 @@ func NewService(repo Repository) *Service {
 	return &Service{Repo: repo}
 }
 
-func (s *Service) GetAllFoods(limit, offset int) ([]Food, int64, error) {
-	return s.Repo.GetAllFoods(limit, offset)
+func (s *Service) GetAll(limit, offset int) ([]Food, int64, error) {
+	return s.Repo.GetAll(limit, offset)
 }
 
-func (s *Service) GetFoodByID(id string) (*Food, error) {
-	return s.Repo.GetFoodByID(id)
+func (s *Service) GetByID(id string) (*Food, error) {
+	return s.Repo.GetByID(id)
 }
 
-func (s *Service) CreateFood(food *Food) error {
-	return s.Repo.CreateFood(food)
+func (s *Service) Create(food *Food) error {
+	return s.Repo.Create(food)
 }
 
-func (s *Service) UpdateFood(food *Food) error {
-	return s.Repo.UpdateFood(food)
+func (s *Service) Update(food *Food) error {
+	existingFood, err := s.Repo.GetByID(food.ID)
+	if err != nil {
+		return err
+	}
+
+	food.CreatedAt = existingFood.CreatedAt
+
+	return s.Repo.Update(food)
 }
 
-func (s *Service) DeleteFood(id string) error {
-	return s.Repo.DeleteFood(id)
+func (s *Service) Delete(id string) error {
+	return s.Repo.Delete(id)
 }

@@ -9,7 +9,7 @@ func (h *Handler) Routes() chi.Router {
 
 	r.Get("/", h.GetAll)
 	r.Post("/", h.Create)
-	r.Get("/{id}", h.Get)
+	r.Get("/{id}", h.GetByID)
 	r.Put("/{id}", h.Update)
 	r.Delete("/{id}", h.Delete)
 

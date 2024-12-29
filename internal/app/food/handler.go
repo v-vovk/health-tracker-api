@@ -49,7 +49,7 @@ func (h *Handler) GetAll(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	foods, total, err := h.Service.GetAllFoods(limit, offset)
+	foods, total, err := h.Service.GetAll(limit, offset)
 	if err != nil {
 		errors.WriteHTTPError(w, http.StatusInternalServerError, "Error retrieving foods")
 		h.Logger.Error("Error retrieving foods", zap.Error(err))
@@ -85,7 +85,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.Service.CreateFood(&food); err != nil {
+	if err := h.Service.Create(&food); err != nil {
 		errors.WriteHTTPError(w, http.StatusInternalServerError, "Error creating food")
 		h.Logger.Error("Error creating food", zap.Error(err))
 		return
@@ -98,7 +98,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) GetByID(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	if id == "" {
 		errors.WriteHTTPError(w, http.StatusBadRequest, "Missing food ID")
@@ -106,7 +106,7 @@ func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	food, err := h.Service.GetFoodByID(id)
+	food, err := h.Service.GetByID(id)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
 			errors.WriteHTTPError(w, http.StatusNotFound, "Food not found")
@@ -147,7 +147,7 @@ func (h *Handler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	updatedData.ID = id
-	if err := h.Service.UpdateFood(&updatedData); err != nil {
+	if err := h.Service.Update(&updatedData); err != nil {
 		if err == gorm.ErrRecordNotFound {
 			errors.WriteHTTPError(w, http.StatusNotFound, "Food not found")
 			h.Logger.Warn("Food not found", zap.String("id", id))
@@ -172,7 +172,7 @@ func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.Service.DeleteFood(id); err != nil {
+	if err := h.Service.Delete(id); err != nil {
 		if err == gorm.ErrRecordNotFound {
 			errors.WriteHTTPError(w, http.StatusNotFound, "Food not found")
 			h.Logger.Warn("Food not found", zap.String("id", id))
